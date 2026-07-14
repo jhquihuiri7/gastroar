@@ -1,0 +1,14 @@
+node_modules
+.next
+npm-debug.log*
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+.env*.local
+.vscode
+.idea
+deploy.sh
+# Modelos 3D sin optimizar (masters). Solo se sirve la versión de public/assets.
+assets-src
