@@ -1,7 +1,13 @@
 import type { Lang } from "./i18n";
 
-export type CategoryId = "starters" | "mains" | "drinks" | "desserts";
-export type TagId = "Signature" | "Vegetarian" | "Seafood" | "Best Seller";
+/**
+ * Antes eran uniones cerradas de 4 valores fijos. Se relajan a `string` porque cada
+ * restaurante multi-tenant define su propia lista de categorías/tags (ver
+ * `src/lib/restaurants.ts`); la demo estática en `/` sigue usando los mismos 4
+ * valores de siempre, así que no cambia en la práctica.
+ */
+export type CategoryId = string;
+export type TagId = string;
 
 export interface Dish {
   id: string;
@@ -29,6 +35,17 @@ export interface Dish {
 }
 
 export const CATEGORY_IDS: CategoryId[] = ["starters", "mains", "drinks", "desserts"];
+
+/**
+ * Shared shape between the static demo (built from CATEGORY_IDS + i18n
+ * Strings.cats) and tenant menus (built from a restaurant's own categories
+ * field). MenuScreen/DishDetailScreen only know this shape, not where it
+ * came from.
+ */
+export interface MenuCategory {
+  id: string;
+  label: string;
+}
 
 export const DISHES: Dish[] = [
   {

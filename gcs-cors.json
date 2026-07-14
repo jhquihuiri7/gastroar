@@ -1,0 +1,19 @@
+[
+  {
+    "origin": ["*"],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  },
+  {
+    "origin": [
+      "https://gastroar-837794427351.us-central1.run.app",
+      "https://gastroar-3ksiy6miqq-uc.a.run.app",
+      "http://localhost:3000",
+      "https://localhost:3000"
+    ],
+    "method": ["PUT"],
+    "responseHeader": ["Content-Type", "x-goog-content-length-range"],
+    "maxAgeSeconds": 3600
+  }
+]

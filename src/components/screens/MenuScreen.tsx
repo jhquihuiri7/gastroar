@@ -1,12 +1,14 @@
 import type { Lang, Strings } from "@/lib/i18n";
-import type { CategoryId, Dish } from "@/lib/menu-data";
-import { CATEGORY_IDS, TAG_STYLE, dishInitials, tagLabel } from "@/lib/menu-data";
+import type { CategoryId, Dish, MenuCategory } from "@/lib/menu-data";
+import { dishInitials } from "@/lib/menu-data";
+import { tagStyle } from "@/lib/tag-color";
 import { IconBell, IconCube, IconGlobe } from "@/components/icons";
 
 interface Props {
   t: Strings;
   lang: Lang;
   cat: CategoryId;
+  categories: MenuCategory[];
   dishes: Dish[];
   onPickCat: (cat: CategoryId) => void;
   onOpenDish: (id: string) => void;
@@ -20,6 +22,7 @@ export default function MenuScreen({
   t,
   lang,
   cat,
+  categories,
   dishes,
   onPickCat,
   onOpenDish,
@@ -28,6 +31,7 @@ export default function MenuScreen({
   onOpenLangSheet,
   onOpenWaiterSheet,
 }: Props) {
+  const activeCategory = categories.find((c) => c.id === cat);
   return (
     <div
       className="menu anim-fade-up"
@@ -61,22 +65,22 @@ export default function MenuScreen({
       </header>
 
       <nav className="cats" aria-label={t.menuCategories}>
-        {CATEGORY_IDS.map((id) => (
+        {categories.map((c) => (
           <button
-            key={id}
+            key={c.id}
             type="button"
-            className={`cat-chip${cat === id ? " cat-chip--active" : ""}`}
-            aria-pressed={cat === id}
-            onClick={() => onPickCat(id)}
+            className={`cat-chip${cat === c.id ? " cat-chip--active" : ""}`}
+            aria-pressed={cat === c.id}
+            onClick={() => onPickCat(c.id)}
           >
-            {t.cats[id]}
+            {c.label}
           </button>
         ))}
       </nav>
 
       <div className="menu__scroll">
         <div className="menu__section-head">
-          <h2 className="menu__title">{t.cats[cat]}</h2>
+          <h2 className="menu__title">{activeCategory?.label}</h2>
           <div className="menu__count">
             {dishes.length} {t.dishesWord}
           </div>
@@ -109,8 +113,8 @@ export default function MenuScreen({
                     <p className="dish-card__desc">{d.desc}</p>
                     <div className="dish-card__foot">
                       {d.tags.map((tg) => (
-                        <span key={tg} className="tag" style={TAG_STYLE[tg]}>
-                          {tagLabel(tg, lang)}
+                        <span key={tg} className="tag" style={tagStyle(tg)}>
+                          {tg.toUpperCase()}
                         </span>
                       ))}
                     </div>

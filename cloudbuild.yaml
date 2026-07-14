@@ -1,0 +1,19 @@
+steps:
+  # `gcloud run deploy --set-build-env-vars` only reaches buildpacks builds,
+  # not a Dockerfile build (Cloud Run silently ignores it in that case) — so
+  # NEXT_PUBLIC_FIREBASE_* need an explicit --build-arg here, or Next.js
+  # bakes an empty Firebase config into the client bundle. See deploy.sh.
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - "--build-arg=NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}"
+      - "--build-arg=NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}"
+      - "--build-arg=NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
+      - "--build-arg=NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}"
+      - "-t"
+      - "${_IMAGE}"
+      - "."
+images:
+  - "${_IMAGE}"
+options:
+  logging: CLOUD_LOGGING_ONLY

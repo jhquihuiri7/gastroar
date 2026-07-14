@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { STR, detectBrowserLang, type Lang } from "@/lib/i18n";
-import { CATEGORY_IDS, DISHES, type CategoryId } from "@/lib/menu-data";
+import type { CategoryId, Dish, MenuCategory } from "@/lib/menu-data";
 import WelcomeScreen from "./screens/WelcomeScreen";
 import MenuScreen from "./screens/MenuScreen";
 import DishDetailScreen from "./screens/DishDetailScreen";
@@ -12,11 +12,21 @@ import Toast from "./Toast";
 
 type Screen = "welcome" | "menu" | "detail" | "experience";
 
-export default function GastroApp() {
+interface Props {
+  dishes: Dish[];
+  categories: MenuCategory[];
+}
+
+/**
+ * Same screen flow as GastroApp.tsx (the static demo at `/`), but menu data
+ * comes from props — populated by src/app/r/[slug]/page.tsx from Firestore —
+ * instead of the hardcoded DISHES/CATEGORY_IDS import. See plan Phase 5.
+ */
+export default function TenantGastroApp({ dishes, categories }: Props) {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [lang, setLang] = useState<Lang>("en");
-  const [cat, setCat] = useState<CategoryId>("starters");
-  const [dishId, setDishId] = useState("scallops");
+  const [cat, setCat] = useState<CategoryId>(categories[0]?.id ?? "");
+  const [dishId, setDishId] = useState(dishes[0]?.id ?? "");
   const [experienceIntent, setExperienceIntent] = useState<ExperienceIntent>("viewer3d");
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [toast, setToast] = useState({ msg: "", on: false });
@@ -26,12 +36,8 @@ export default function GastroApp() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const t = STR[lang];
-  const dish = DISHES.find((d) => d.id === dishId) ?? DISHES[0];
-  const dishes = DISHES.filter((d) => d.cat === cat);
-  const categories = useMemo(
-    () => CATEGORY_IDS.map((id) => ({ id, label: t.cats[id as keyof typeof t.cats] })),
-    [t],
-  );
+  const dish = dishes.find((d) => d.id === dishId) ?? dishes[0] ?? null;
+  const visibleDishes = dishes.filter((d) => d.cat === cat);
 
   useEffect(() => {
     setLang(detectBrowserLang());
@@ -69,7 +75,7 @@ export default function GastroApp() {
   };
 
   const closeExperience = () => {
-    pendingFocusSelector.current = `[data-experience-trigger="${dish.id}:${experienceIntent}"]`;
+    if (dish) pendingFocusSelector.current = `[data-experience-trigger="${dish.id}:${experienceIntent}"]`;
     setScreen(experienceReturn.current);
   };
 
@@ -96,7 +102,7 @@ export default function GastroApp() {
           lang={lang}
           cat={cat}
           categories={categories}
-          dishes={dishes}
+          dishes={visibleDishes}
           onPickCat={setCat}
           onOpenDish={(id) => {
             setDishId(id);
@@ -109,7 +115,7 @@ export default function GastroApp() {
         />
       )}
 
-      {screen === "detail" && (
+      {screen === "detail" && dish && (
         <DishDetailScreen
           t={t}
           dish={dish}
@@ -120,7 +126,7 @@ export default function GastroApp() {
         />
       )}
 
-      {screen === "experience" && (
+      {screen === "experience" && dish && (
         <ArViewScreen
           key={`${dish.id}:${experienceIntent}`}
           t={t}

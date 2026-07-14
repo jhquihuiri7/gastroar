@@ -201,3 +201,44 @@ Antes de desplegar un modelo nuevo:
 3. Probar AR Lite y cada launcher nativo disponible en dispositivos físicos.
 4. Validar materiales en Quick Look; si la conversión runtime no es suficiente, exportar un USDZ propio.
 5. Incrementar la versión `?v=...` y confirmar MIME, caché y `Permissions-Policy` en el entorno publicado.
+
+---
+
+## Consola multi-tenant (`/admin`) y cartas por restaurante (`/r/[slug]`)
+
+Además de la carta estática de `/` (documentada arriba), la app incluye una consola de administración donde cualquier restaurante puede registrarse, cargar su menú con assets AR propios y publicarlo en su propia URL. Resumen de la arquitectura:
+
+- **Auth**: Firebase Authentication (email/password) + cookie de sesión httpOnly verificada en `src/proxy.ts` (el `middleware.ts` de versiones anteriores de Next.js) para todo `/admin/**`.
+- **Datos**: Firestore — `restaurants/{slug}` (slug = ID del documento) con subcolección `dishes`. Toda la escritura pasa por `src/lib/restaurants.ts` y revalida ownership en cada API route (`src/lib/admin-auth.ts`), no solo en el proxy.
+- **Assets AR**: subida directa del navegador a Google Cloud Storage vía URLs firmadas v4 (`src/app/api/admin/uploads/`), sin pasar el archivo por el servidor de la app.
+- **Carta pública**: `src/app/r/[slug]/page.tsx` resuelve el restaurante y renderiza `TenantGastroApp`, la misma UI/lógica AR de `GastroApp.tsx` pero recibiendo el menú por props en vez del `DISHES` hardcodeado.
+
+El detalle de decisiones de diseño (por qué subcolección y no array embebido, por qué slug como ID, etc.) vive en el plan de implementación original de esta feature, no se duplica aquí.
+
+### Poner en marcha el entorno
+
+1. Crear un proyecto Firebase (Auth + Firestore Native) y un bucket de GCS.
+2. Copiar `.env.example` a `.env.local` y completarlo. Para firmar URLs de subida en local hace falta la key de una service account con `roles/storage.admin` (ver comentario en `.env.example`) — en Cloud Run no hace falta, la identidad del servicio firma de forma nativa.
+3. `npm run seed:demo -- <tuUid>` — migra el menú hardcodeado de `menu-data.ts` como el restaurante `demo`, para probar el flujo con datos reales antes de dar de alta un restaurante desde cero. `<tuUid>` es el UID de tu cuenta (Firebase Console → Authentication, o créala en `/admin/signup`) para que el restaurante aparezca en tu panel.
+4. `npm run dev` y entra a `/admin/signup` (o visita `/r/demo` directamente si corriste el seed).
+
+### Deploy
+
+`deploy.sh` construye y despliega a Cloud Run en dos pasos:
+
+1. `gcloud builds submit --config cloudbuild.yaml` construye la imagen. Las variables `NEXT_PUBLIC_FIREBASE_*` se pasan como `--build-arg` (vía `cloudbuild.yaml`), porque Next.js las incrusta en el bundle del cliente durante `next build`, no en tiempo de ejecución. **Importante**: `gcloud run deploy --source --set-build-env-vars` solo llega a builds con buildpacks, no a un build con Dockerfile — se ignora en silencio ahí, por eso el build explícito con `cloudbuild.yaml`.
+2. `gcloud run deploy --image` despliega esa imagen ya construida, con `FIREBASE_PROJECT_ID`/`GCS_BUCKET_NAME` como env vars de runtime.
+
+El servicio corre con la cuenta de servicio `firebase-adminsdk-fbsvc@<proyecto>.iam.gserviceaccount.com` (creada automáticamente por Firebase), que ya tiene los roles necesarios para Firestore, Auth admin y firmar URLs de GCS sin necesidad de una key en producción.
+
+### CORS del bucket
+
+El navegador sube los assets directo a GCS (`AssetUploader.tsx` hace un `PUT` con `XMLHttpRequest` a la URL firmada) y `<model-viewer>` los lee luego con `fetch()` para poder mostrar progreso — ambas cosas son peticiones cross-origin desde el dominio de la app hacia `storage.googleapis.com`, así que el bucket necesita CORS explícito o el navegador las bloquea en el preflight.
+
+`gcs-cors.json` (repo root) define las reglas: `GET`/`HEAD` abiertos a cualquier origen (son assets públicos de cartas, sin credenciales) y `PUT` restringido a los orígenes conocidos de la app. Aplicar o actualizar:
+
+```bash
+gcloud storage buckets update gs://<bucket> --cors-file=gcs-cors.json
+```
+
+Si cambia la URL del servicio de Cloud Run (nuevo dominio, dominio propio, etc.), hay que agregarla a la lista `origin` del bloque `PUT` en `gcs-cors.json` y reaplicar.

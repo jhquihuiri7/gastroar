@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# service account keys — local dev only, never committed. Cloud Run uses its
+# attached runtime service account instead (no key file in production).
+/secrets/
+
 # vercel
 .vercel
 

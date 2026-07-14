@@ -108,6 +108,21 @@ export const LANGS: { code: string; l: Lang; native: string }[] = [
   { code: "FR", l: "fr", native: "Français" },
 ];
 
+const SUPPORTED_LANGS = LANGS.map((L) => L.l);
+
+/** Reads the browser's preferred languages and matches the first supported one; falls back to "en". */
+export function detectBrowserLang(): Lang {
+  if (typeof navigator === "undefined") return "en";
+  const candidates = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const base = candidate.slice(0, 2).toLowerCase();
+    const match = SUPPORTED_LANGS.find((l) => l === base);
+    if (match) return match;
+  }
+  return "en";
+}
+
 export const STR: Record<Lang, Strings> = {
   en: {
     tableChip: "TABLE 12",

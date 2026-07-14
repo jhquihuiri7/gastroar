@@ -1,11 +1,11 @@
-import type { Lang, Strings } from "@/lib/i18n";
+import type { Strings } from "@/lib/i18n";
 import type { Dish } from "@/lib/menu-data";
-import { TAG_STYLE, dishInitials, tagLabel } from "@/lib/menu-data";
+import { dishInitials } from "@/lib/menu-data";
+import { tagStyle } from "@/lib/tag-color";
 import { IconBack, IconBell, IconCube } from "@/components/icons";
 
 interface Props {
   t: Strings;
-  lang: Lang;
   dish: Dish;
   onBack: () => void;
   onView3d: () => void;
@@ -15,7 +15,6 @@ interface Props {
 
 export default function DishDetailScreen({
   t,
-  lang,
   dish,
   onBack,
   onView3d,
@@ -58,8 +57,8 @@ export default function DishDetailScreen({
       <div className="detail__scroll">
         <div className="detail__tags">
           {dish.tags.map((tg) => (
-            <span key={tg} className="tag tag--lg" style={TAG_STYLE[tg]}>
-              {tagLabel(tg, lang)}
+            <span key={tg} className="tag tag--lg" style={tagStyle(tg)}>
+              {tg.toUpperCase()}
             </span>
           ))}
         </div>
