@@ -311,6 +311,68 @@
   gap: 16px;
 }
 
+.admin-form-row--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.admin-fieldset {
+  margin: 18px 0 0;
+  padding: 18px;
+  border: 1px solid var(--border-2);
+  border-radius: 16px;
+}
+
+.admin-fieldset legend {
+  padding: 0 8px;
+  color: var(--text-bright);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-marker-copy {
+  margin-top: 0;
+}
+
+.admin-marker-preview {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px dashed var(--border-2);
+  border-radius: 14px;
+  background: #f5f3ed;
+}
+
+.admin-marker-preview img {
+  display: block;
+  width: min(100%, 420px);
+  height: auto;
+}
+
+.admin-inline-message {
+  color: var(--acc);
+  font-size: 12.5px;
+}
+
+.admin-form-actions--wrap {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.admin-marker-print-link {
+  min-height: 44px;
+  text-decoration: none;
+}
+
+@media (max-width: 620px) {
+  .admin-form-row,
+  .admin-form-row--three {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
 .admin-form-actions {
   display: flex;
   gap: 10px;

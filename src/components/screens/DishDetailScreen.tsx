@@ -8,7 +8,6 @@ interface Props {
   t: Strings;
   dish: Dish;
   onBack: () => void;
-  onView3d: () => void;
   onViewOnTable: () => void;
   onOpenWaiterSheet: () => void;
 }
@@ -17,7 +16,6 @@ export default function DishDetailScreen({
   t,
   dish,
   onBack,
-  onView3d,
   onViewOnTable,
   onOpenWaiterSheet,
 }: Props) {
@@ -81,16 +79,6 @@ export default function DishDetailScreen({
 
       <div className="detail__cta-wrap">
         <div className="detail__cta-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            data-experience-trigger={`${dish.id}:viewer3d`}
-            disabled={!hasModel}
-            onClick={onView3d}
-          >
-            <IconCube size={16} strokeWidth={2.1} />
-            {t.viewIn3d}
-          </button>
           <button
             type="button"
             className="btn-primary"

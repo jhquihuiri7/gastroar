@@ -12,7 +12,6 @@ interface Props {
   dishes: Dish[];
   onPickCat: (cat: CategoryId) => void;
   onOpenDish: (id: string) => void;
-  onView3d: (id: string) => void;
   onViewOnTable: (id: string) => void;
   onOpenLangSheet: () => void;
   onOpenWaiterSheet: () => void;
@@ -26,7 +25,6 @@ export default function MenuScreen({
   dishes,
   onPickCat,
   onOpenDish,
-  onView3d,
   onViewOnTable,
   onOpenLangSheet,
   onOpenWaiterSheet,
@@ -122,17 +120,6 @@ export default function MenuScreen({
                 </div>
 
                 <div className="dish-card__experience-actions">
-                  <button
-                    type="button"
-                    className="experience-btn"
-                    data-experience-trigger={`${d.id}:viewer3d`}
-                    disabled={!hasModel}
-                    title={!hasModel ? t.modelActionsUnavailable : undefined}
-                    onClick={() => onView3d(d.id)}
-                  >
-                    <IconCube size={13} />
-                    {t.viewIn3d}
-                  </button>
                   <button
                     type="button"
                     className="experience-btn experience-btn--primary"

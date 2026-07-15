@@ -2,6 +2,7 @@ import "server-only";
 
 import { adminDb } from "./firebase-admin";
 import type { Dish } from "./menu-data";
+import { DEFAULT_AR_MARKER, type ArMarkerConfig } from "./ar-config";
 
 export const DEFAULT_CATEGORIES = ["starters", "mains", "drinks", "desserts"];
 
@@ -16,6 +17,7 @@ export interface Restaurant {
   slug: string;
   ownerUid: string;
   categories: RestaurantCategory[];
+  arMarker: ArMarkerConfig;
   createdAt: number;
 }
 
@@ -62,6 +64,7 @@ export async function createRestaurant(params: {
     slug: params.slug,
     ownerUid: params.ownerUid,
     categories: defaultCategories(),
+    arMarker: DEFAULT_AR_MARKER,
     createdAt: Date.now(),
   };
 
@@ -84,6 +87,13 @@ export async function updateRestaurantCategories(
   categories: RestaurantCategory[],
 ): Promise<void> {
   await restaurantsCol().doc(restaurantId).update({ categories });
+}
+
+export async function updateRestaurantMarker(
+  restaurantId: string,
+  arMarker: ArMarkerConfig,
+): Promise<void> {
+  await restaurantsCol().doc(restaurantId).update({ arMarker });
 }
 
 export async function listDishes(restaurantId: string): Promise<Dish[]> {

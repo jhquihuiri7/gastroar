@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { STR, detectBrowserLang, type Lang } from "@/lib/i18n";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { STR, detectBrowserLang, stringsForTable, type Lang } from "@/lib/i18n";
 import type { CategoryId, Dish, MenuCategory } from "@/lib/menu-data";
+import type { ArMarkerConfig } from "@/lib/ar-config";
 import WelcomeScreen from "./screens/WelcomeScreen";
 import MenuScreen from "./screens/MenuScreen";
 import DishDetailScreen from "./screens/DishDetailScreen";
-import ArViewScreen, { type ExperienceIntent } from "./screens/ArViewScreen";
+import ArViewScreen from "./screens/ArViewScreen";
 import SheetHost, { type SheetKind } from "./SheetHost";
 import Toast from "./Toast";
 
@@ -15,6 +16,8 @@ type Screen = "welcome" | "menu" | "detail" | "experience";
 interface Props {
   dishes: Dish[];
   categories: MenuCategory[];
+  marker: ArMarkerConfig;
+  tableId?: string;
 }
 
 /**
@@ -22,12 +25,11 @@ interface Props {
  * comes from props — populated by src/app/r/[slug]/page.tsx from Firestore —
  * instead of the hardcoded DISHES/CATEGORY_IDS import. See plan Phase 5.
  */
-export default function TenantGastroApp({ dishes, categories }: Props) {
+export default function TenantGastroApp({ dishes, categories, marker, tableId }: Props) {
   const [screen, setScreen] = useState<Screen>("welcome");
   const [lang, setLang] = useState<Lang>("en");
   const [cat, setCat] = useState<CategoryId>(categories[0]?.id ?? "");
   const [dishId, setDishId] = useState(dishes[0]?.id ?? "");
-  const [experienceIntent, setExperienceIntent] = useState<ExperienceIntent>("viewer3d");
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [toast, setToast] = useState({ msg: "", on: false });
 
@@ -35,12 +37,13 @@ export default function TenantGastroApp({ dishes, categories }: Props) {
   const pendingFocusSelector = useRef<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const t = STR[lang];
+  const t = useMemo(() => stringsForTable(STR[lang], tableId), [lang, tableId]);
   const dish = dishes.find((d) => d.id === dishId) ?? dishes[0] ?? null;
   const visibleDishes = dishes.filter((d) => d.cat === cat);
 
   useEffect(() => {
-    setLang(detectBrowserLang());
+    const frame = requestAnimationFrame(() => setLang(detectBrowserLang()));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -67,15 +70,14 @@ export default function TenantGastroApp({ dishes, categories }: Props) {
     };
   }, []);
 
-  const startExperience = (id: string, intent: ExperienceIntent, from: Screen) => {
+  const startExperience = (id: string, from: Screen) => {
     experienceReturn.current = from;
     setDishId(id);
-    setExperienceIntent(intent);
     setScreen("experience");
   };
 
   const closeExperience = () => {
-    if (dish) pendingFocusSelector.current = `[data-experience-trigger="${dish.id}:${experienceIntent}"]`;
+    if (dish) pendingFocusSelector.current = `[data-experience-trigger="${dish.id}:table"]`;
     setScreen(experienceReturn.current);
   };
 
@@ -108,8 +110,7 @@ export default function TenantGastroApp({ dishes, categories }: Props) {
             setDishId(id);
             setScreen("detail");
           }}
-          onView3d={(id) => startExperience(id, "viewer3d", "menu")}
-          onViewOnTable={(id) => startExperience(id, "table", "menu")}
+          onViewOnTable={(id) => startExperience(id, "menu")}
           onOpenLangSheet={() => setSheet("lang")}
           onOpenWaiterSheet={() => setSheet("waiter")}
         />
@@ -120,18 +121,18 @@ export default function TenantGastroApp({ dishes, categories }: Props) {
           t={t}
           dish={dish}
           onBack={() => setScreen("menu")}
-          onView3d={() => startExperience(dish.id, "viewer3d", "detail")}
-          onViewOnTable={() => startExperience(dish.id, "table", "detail")}
+          onViewOnTable={() => startExperience(dish.id, "detail")}
           onOpenWaiterSheet={() => setSheet("waiter")}
         />
       )}
 
       {screen === "experience" && dish && (
         <ArViewScreen
-          key={`${dish.id}:${experienceIntent}`}
+          key={dish.id}
           t={t}
           dish={dish}
-          intent={experienceIntent}
+          marker={marker}
+          tableId={tableId}
           onClose={closeExperience}
           onOpenWaiterSheet={() => setSheet("waiter")}
         />

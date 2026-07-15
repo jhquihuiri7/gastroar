@@ -22,6 +22,7 @@ const ALLOWED_CONTENT_TYPES: Record<string, string> = {
   ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
+  ".mind": "application/octet-stream",
 };
 
 export function contentTypeForExtension(extension: string): string | undefined {

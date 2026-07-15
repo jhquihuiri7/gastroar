@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import CategoryManager from "@/components/admin/CategoryManager";
 import DeleteDishButton from "@/components/admin/DeleteDishButton";
 import LogoutButton from "@/components/admin/LogoutButton";
+import MarkerConfigForm from "@/components/admin/MarkerConfigForm";
 import { getOwnedRestaurant } from "@/lib/admin-auth";
 import { listDishes } from "@/lib/restaurants";
 
@@ -35,6 +36,15 @@ export default async function RestaurantDashboardPage({
         <p className="faint">
           Carta pública: <code>/r/{restaurant.slug}</code>
         </p>
+
+        <div className="admin-section">
+          <h2 className="admin-section-title">QR y marcador AR de las mesas</h2>
+          <MarkerConfigForm
+            restaurantId={restaurantId}
+            restaurantSlug={restaurant.slug}
+            initialConfig={restaurant.arMarker}
+          />
+        </div>
 
         <div className="admin-section">
           <h2 className="admin-section-title">Categorías</h2>

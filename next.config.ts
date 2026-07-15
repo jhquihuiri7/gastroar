@@ -37,6 +37,13 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: MODEL_CACHE },
         ],
       },
+      {
+        source: "/:path(.*\\.mind)",
+        headers: [
+          { key: "Content-Type", value: "application/octet-stream" },
+          { key: "Cache-Control", value: MODEL_CACHE },
+        ],
+      },
     ];
   },
 };

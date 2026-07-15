@@ -1,33 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import ArLiteExperience from "@/components/experience/ArLiteExperience";
+import dynamic from "next/dynamic";
 import RealArLauncher, { type LiteEntryReason } from "@/components/experience/RealArLauncher";
 import Viewer3D from "@/components/experience/Viewer3D";
 import type { CameraFailureReason } from "@/lib/camera";
 import type { Strings } from "@/lib/i18n";
 import type { Dish } from "@/lib/menu-data";
+import type { ArMarkerConfig } from "@/lib/ar-config";
 
-export type ExperienceIntent = "viewer3d" | "table";
+const ArLiteExperience = dynamic(() => import("@/components/experience/ArLiteExperience"), {
+  ssr: false,
+  loading: () => <div className="experience experience--real-ar" aria-busy="true" />,
+});
 
 interface Props {
   t: Strings;
   dish: Dish;
-  intent: ExperienceIntent;
+  marker: ArMarkerConfig;
+  tableId?: string;
   onClose: () => void;
   onOpenWaiterSheet: () => void;
 }
 
 type TableStage = "real" | "lite" | "viewer";
 
-export default function ArViewScreen({
-  t,
-  dish,
-  intent,
-  onClose,
-  onOpenWaiterSheet,
-}: Props) {
-  const [stage, setStage] = useState<TableStage>(intent === "table" ? "real" : "viewer");
+/**
+ * Automatic fallback cascade for "View on my table": try full native AR first,
+ * then marker-based camera AR, then the plain 3D viewer. Each downgrade
+ * happens without user input and surfaces a notice explaining the switch.
+ */
+export default function ArViewScreen({ t, dish, marker, tableId, onClose, onOpenWaiterSheet }: Props) {
+  const [stage, setStage] = useState<TableStage>("real");
   const [liteNotice, setLiteNotice] = useState<string | undefined>();
   const [cameraFailure, setCameraFailure] = useState<CameraFailureReason | null>(null);
 
@@ -44,16 +48,10 @@ export default function ArViewScreen({
   const useLite = useCallback(
     (reason: LiteEntryReason) => {
       setCameraFailure(null);
-      setLiteNotice(
-        reason === "unsupported"
-          ? t.arCompatibilityNotice
-          : reason === "failed"
-            ? t.arFailedToLite
-            : t.arLiteActivated,
-      );
+      setLiteNotice(reason === "unsupported" ? t.arCompatibilityNotice : t.arFailedToLite);
       setStage("lite");
     },
-    [t.arCompatibilityNotice, t.arFailedToLite, t.arLiteActivated],
+    [t.arCompatibilityNotice, t.arFailedToLite],
   );
 
   const cameraFailed = useCallback((reason: CameraFailureReason) => {
@@ -70,7 +68,15 @@ export default function ArViewScreen({
   const useViewer = useCallback(() => setStage("viewer"), []);
 
   if (stage === "real") {
-    return <RealArLauncher t={t} dish={dish} onUseLite={useLite} onClose={onClose} />;
+    return (
+      <RealArLauncher
+        t={t}
+        dish={dish}
+        onUseLite={useLite}
+        onModelError={useViewer}
+        onClose={onClose}
+      />
+    );
   }
 
   if (stage === "lite") {
@@ -78,6 +84,8 @@ export default function ArViewScreen({
       <ArLiteExperience
         t={t}
         dish={dish}
+        marker={marker}
+        tableId={tableId}
         notice={liteNotice}
         onCameraFailure={cameraFailed}
         onUse3d={useViewer}
@@ -92,7 +100,6 @@ export default function ArViewScreen({
       dish={dish}
       cameraFailure={cameraFailure}
       onRetryCamera={
-        intent === "table" &&
         cameraFailure &&
         (cameraFailure === "permission-denied" || cameraFailure === "busy" || cameraFailure === "unknown")
           ? retryCamera

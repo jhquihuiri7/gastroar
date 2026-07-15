@@ -1,4 +1,5 @@
 import type { Lang } from "./i18n";
+import type { DishArCalibration } from "./ar-config";
 
 /**
  * Antes eran uniones cerradas de 4 valores fijos. Se relajan a `string` porque cada
@@ -32,6 +33,8 @@ export interface Dish {
    * silencio, así que es mejor dejarlo vacío que ponerlo "por si acaso".
    */
   modelUsdzUrl?: string;
+  /** Metric placement data used by marker AR. */
+  arCalibration?: DishArCalibration;
 }
 
 export const CATEGORY_IDS: CategoryId[] = ["starters", "mains", "drinks", "desserts"];
@@ -59,6 +62,12 @@ export const DISHES: Dish[] = [
     imageUrl: "/assets/dish-scallops-card.jpg",
     // Versiona la URL aunque el archivo físico conserve su nombre actual.
     modelGlbUrl: "/assets/object.glb?v=20260713",
+    arCalibration: {
+      realSizeMm: [72, 169, 72],
+      scaleCorrection: 1,
+      anchorOffsetMm: [0, -120, 0],
+      rotationDeg: [90, 0, 0],
+    },
   },
   {
     id: "burrata",

@@ -16,7 +16,6 @@ export interface Strings {
   openMenu: string;
   scannedNote: string;
   viewInAr: string;
-  viewIn3d: string;
   viewOnTable: string;
   modelActionsUnavailable: string;
   menuModelNote: string;
@@ -36,30 +35,29 @@ export interface Strings {
   viewer3d: string;
   viewerHint: string;
   realAr: string;
-  realArReady: string;
   realArInstructions: string;
-  launchRealAr: string;
+  /** Se muestra mientras sondeamos canActivateAR antes de habilitar el botón nativo. */
+  arCheckingSupport: string;
   launchingRealAr: string;
-  useArLite: string;
   quickLookFallback: string;
   arLite: string;
   arLiteActivated: string;
   arLiteAim: string;
   cameraStarting: string;
-  placeHere: string;
+  /** Cámara y modelo listos: el plato se colocará solo en un instante. */
+  arLitePlacing: string;
   dishPlaced: string;
-  rotateDish: string;
-  rotateLeft: string;
-  rotateRight: string;
-  resizeDish: string;
-  moveDish: string;
-  smaller: string;
-  larger: string;
-  moveLeft: string;
-  moveRight: string;
-  moveUp: string;
-  moveDown: string;
+  /** Instrucciones de gestos táctiles del modo AR Lite (arrastrar/pellizcar/girar). */
+  gestureHint: string;
+  markerInitializing: string;
+  markerAim: string;
+  markerFound: string;
+  markerLost: string;
+  markerHint: string;
+  markerGestureHint: string;
+  realSizeLocked: string;
   use3dInstead: string;
+  tableLabel: string;
   arCompatibilityNotice: string;
   arFailedToLite: string;
   cameraNeeded: string;
@@ -133,10 +131,9 @@ export const STR: Record<Lang, Strings> = {
     openMenu: "Open the menu",
     scannedNote: "Scanned from your table’s QR code",
     viewInAr: "View in AR",
-    viewIn3d: "View in 3D",
     viewOnTable: "View on my table",
     modelActionsUnavailable: "3D model coming soon",
-    menuModelNote: "3D and table view are available on marked dishes",
+    menuModelNote: "Table view is available on marked dishes",
     menuCategories: "Menu categories",
     back: "Back",
     close: "Close",
@@ -153,30 +150,26 @@ export const STR: Record<Lang, Strings> = {
     viewer3d: "3D VIEWER",
     viewerHint: "Drag to rotate · Pinch to zoom",
     realAr: "FULL AR",
-    realArReady: "Your dish is ready for full AR",
     realArInstructions: "When native AR opens, move your phone slowly to detect the table, then place the dish.",
-    launchRealAr: "Start full AR",
-    launchingRealAr: "Preparing native AR…",
-    useArLite: "Use AR Lite",
-    quickLookFallback: "If native AR does not open, use the compatible mode.",
-    arLite: "AR LITE",
-    arLiteActivated: "Compatible mode activated.",
+    arCheckingSupport: "Checking AR support on this device…",
+    launchingRealAr: "Opening native AR…",
+    quickLookFallback: "If native AR is not available, a compatible mode opens automatically.",
+    arLite: "QR AR",
+    arLiteActivated: "Table marker mode activated.",
     arLiteAim: "Point at a clear area of the table.",
     cameraStarting: "Starting the camera…",
-    placeHere: "Place dish here",
-    dishPlaced: "Dish placed · use the controls to adjust it",
-    rotateDish: "Rotate",
-    rotateLeft: "Rotate dish left",
-    rotateRight: "Rotate dish right",
-    resizeDish: "Size",
-    moveDish: "Position",
-    smaller: "Make dish smaller",
-    larger: "Make dish larger",
-    moveLeft: "Move dish left",
-    moveRight: "Move dish right",
-    moveUp: "Move dish up",
-    moveDown: "Move dish down",
-    use3dInstead: "Use 3D viewer",
+    arLitePlacing: "Placing the dish on your table…",
+    dishPlaced: "Dish placed · adjust it with your fingers",
+    gestureHint: "Drag to move · Pinch to resize · Twist with two fingers to rotate",
+    markerInitializing: "Preparing marker tracking…",
+    markerAim: "Fit the printed AR reference inside the frame.",
+    markerFound: "Table locked · the dish is anchored",
+    markerLost: "Reference lost · hold steady while we reacquire it",
+    markerHint: "Keep the printed reference flat, visible and free of glare.",
+    markerGestureHint: "Drag to move · Twist with two fingers to rotate",
+    realSizeLocked: "Real size locked",
+    use3dInstead: "Use 3D instead",
+    tableLabel: "Table",
     arCompatibilityNotice: "Full AR is not available. We’ll use compatible mode.",
     arFailedToLite: "Full AR could not start. Compatible mode is ready.",
     cameraNeeded: "We need camera access to show the dish on your table.",
@@ -220,10 +213,9 @@ export const STR: Record<Lang, Strings> = {
     openMenu: "Abrir el menú",
     scannedNote: "Escaneado desde el código QR de tu mesa",
     viewInAr: "Ver en AR",
-    viewIn3d: "Ver en 3D",
     viewOnTable: "Ver en mi mesa",
     modelActionsUnavailable: "Modelo 3D próximamente",
-    menuModelNote: "Las vistas 3D y en mesa están disponibles en los platos marcados",
+    menuModelNote: "La vista en mesa está disponible en los platos marcados",
     menuCategories: "Categorías del menú",
     back: "Volver",
     close: "Cerrar",
@@ -240,30 +232,26 @@ export const STR: Record<Lang, Strings> = {
     viewer3d: "VISOR 3D",
     viewerHint: "Arrastra para girar · Pellizca para acercar",
     realAr: "AR COMPLETA",
-    realArReady: "Tu plato está listo para AR completa",
     realArInstructions: "Al abrirse la AR nativa, mueve lentamente el teléfono para detectar la mesa y coloca el plato.",
-    launchRealAr: "Iniciar AR completa",
-    launchingRealAr: "Preparando AR nativa…",
-    useArLite: "Usar AR Lite",
-    quickLookFallback: "Si el AR nativo no se abre, usa el modo compatible.",
-    arLite: "AR LITE",
-    arLiteActivated: "Modo compatible activado.",
+    arCheckingSupport: "Comprobando la compatibilidad AR de este dispositivo…",
+    launchingRealAr: "Abriendo AR nativa…",
+    quickLookFallback: "Si la AR nativa no está disponible, se abrirá automáticamente un modo compatible.",
+    arLite: "AR CON QR",
+    arLiteActivated: "Modo con marcador de mesa activado.",
     arLiteAim: "Apunta a una zona libre de la mesa.",
     cameraStarting: "Iniciando la cámara…",
-    placeHere: "Colocar plato aquí",
-    dishPlaced: "Plato colocado · usa los controles para ajustarlo",
-    rotateDish: "Rotación",
-    rotateLeft: "Girar el plato a la izquierda",
-    rotateRight: "Girar el plato a la derecha",
-    resizeDish: "Tamaño",
-    moveDish: "Posición",
-    smaller: "Reducir el plato",
-    larger: "Aumentar el plato",
-    moveLeft: "Mover el plato a la izquierda",
-    moveRight: "Mover el plato a la derecha",
-    moveUp: "Mover el plato hacia arriba",
-    moveDown: "Mover el plato hacia abajo",
+    arLitePlacing: "Colocando el plato en tu mesa…",
+    dishPlaced: "Plato colocado · ajústalo con los dedos",
+    gestureHint: "Arrastra para mover · Pellizca para el tamaño · Gira con dos dedos",
+    markerInitializing: "Preparando el seguimiento del marcador…",
+    markerAim: "Encaja la referencia AR impresa dentro del marco.",
+    markerFound: "Mesa fijada · el plato está anclado",
+    markerLost: "Referencia perdida · mantén el móvil estable para recuperarla",
+    markerHint: "Mantén la referencia impresa plana, visible y sin reflejos.",
+    markerGestureHint: "Arrastra para mover · Gira con dos dedos",
+    realSizeLocked: "Tamaño real bloqueado",
     use3dInstead: "Usar visor 3D",
+    tableLabel: "Mesa",
     arCompatibilityNotice: "La AR completa no está disponible aquí. Usaremos el modo compatible.",
     arFailedToLite: "No se pudo iniciar el AR completo. El modo compatible está listo.",
     cameraNeeded: "Necesitamos acceso a la cámara para mostrar el plato en tu mesa.",
@@ -307,10 +295,9 @@ export const STR: Record<Lang, Strings> = {
     openMenu: "Ouvrir le menu",
     scannedNote: "Scanné depuis le QR code de votre table",
     viewInAr: "Voir en RA",
-    viewIn3d: "Voir en 3D",
     viewOnTable: "Voir sur ma table",
     modelActionsUnavailable: "Modèle 3D bientôt disponible",
-    menuModelNote: "La vue 3D et sur table est disponible pour les plats indiqués",
+    menuModelNote: "La vue sur table est disponible pour les plats indiqués",
     menuCategories: "Catégories du menu",
     back: "Retour",
     close: "Fermer",
@@ -327,30 +314,26 @@ export const STR: Record<Lang, Strings> = {
     viewer3d: "VISIONNEUSE 3D",
     viewerHint: "Glissez pour pivoter · Pincez pour zoomer",
     realAr: "RA COMPLÈTE",
-    realArReady: "Votre plat est prêt pour la RA complète",
     realArInstructions: "Quand la RA native s’ouvre, déplacez lentement le téléphone pour détecter la table, puis placez le plat.",
-    launchRealAr: "Lancer la RA complète",
-    launchingRealAr: "Préparation de la RA native…",
-    useArLite: "Utiliser RA Lite",
-    quickLookFallback: "Si la RA native ne s’ouvre pas, utilisez le mode compatible.",
-    arLite: "RA LITE",
-    arLiteActivated: "Mode compatible activé.",
+    arCheckingSupport: "Vérification de la compatibilité RA de cet appareil…",
+    launchingRealAr: "Ouverture de la RA native…",
+    quickLookFallback: "Si la RA native n’est pas disponible, un mode compatible s’ouvre automatiquement.",
+    arLite: "RA AVEC QR",
+    arLiteActivated: "Mode avec marqueur de table activé.",
     arLiteAim: "Visez une zone libre de la table.",
     cameraStarting: "Démarrage de la caméra…",
-    placeHere: "Placer le plat ici",
-    dishPlaced: "Plat placé · utilisez les commandes pour l’ajuster",
-    rotateDish: "Rotation",
-    rotateLeft: "Pivoter le plat vers la gauche",
-    rotateRight: "Pivoter le plat vers la droite",
-    resizeDish: "Taille",
-    moveDish: "Position",
-    smaller: "Réduire le plat",
-    larger: "Agrandir le plat",
-    moveLeft: "Déplacer le plat à gauche",
-    moveRight: "Déplacer le plat à droite",
-    moveUp: "Déplacer le plat vers le haut",
-    moveDown: "Déplacer le plat vers le bas",
-    use3dInstead: "Utiliser la visionneuse 3D",
+    arLitePlacing: "Placement du plat sur votre table…",
+    dishPlaced: "Plat placé · ajustez-le avec les doigts",
+    gestureHint: "Glissez pour déplacer · Pincez pour la taille · Tournez avec deux doigts",
+    markerInitializing: "Préparation du suivi du marqueur…",
+    markerAim: "Cadrez la référence RA imprimée dans le repère.",
+    markerFound: "Table verrouillée · le plat est ancré",
+    markerLost: "Référence perdue · restez stable pour la retrouver",
+    markerHint: "Gardez la référence imprimée à plat, visible et sans reflet.",
+    markerGestureHint: "Glissez pour déplacer · Tournez avec deux doigts",
+    realSizeLocked: "Taille réelle verrouillée",
+    use3dInstead: "Utiliser la vue 3D",
+    tableLabel: "Table",
     arCompatibilityNotice: "La RA complète n’est pas disponible. Le mode compatible sera utilisé.",
     arFailedToLite: "La RA complète n’a pas démarré. Le mode compatible est prêt.",
     cameraNeeded: "Nous avons besoin de la caméra pour afficher le plat sur votre table.",
@@ -386,3 +369,12 @@ export const STR: Record<Lang, Strings> = {
     cats: { starters: "Entrées", mains: "Plats", drinks: "Boissons", desserts: "Desserts" },
   },
 };
+
+export function stringsForTable(strings: Strings, tableId?: string): Strings {
+  if (!tableId) return strings;
+  return {
+    ...strings,
+    tableChip: `${strings.tableLabel.toUpperCase()} ${tableId}`,
+    waiterSub: strings.waiterSub.replace("12", tableId),
+  };
+}

@@ -16,7 +16,7 @@ La interfaz ofrece dos acciones distintas:
 | Nivel | Implementación | Qué ofrece |
 | --- | --- | --- |
 | 1. AR real | `<model-viewer ar>` con `ar-modes="webxr scene-viewer quick-look"` | Detección de superficies y colocación espacial mediante WebXR, Scene Viewer o Quick Look, según el dispositivo. |
-| 2. AR Lite | `getUserMedia()` + vídeo de la cámara + modelo 3D superpuesto | Colocación visual manual: mover, girar y cambiar el tamaño del plato. |
+| 2. AR con marcador | MindAR Image Tracking + Three.js | Pose 6DoF y escala métrica respecto a la referencia impresa situada junto al QR. |
 | 3. Visor 3D | `<model-viewer camera-controls>` | Modelo orbitable y ampliable sin usar la cámara. |
 
 Un plato sin modelo no simula la experiencia: sus acciones 3D/AR aparecen deshabilitadas y la carta indica que el modelo está en producción.
@@ -29,9 +29,9 @@ Un plato sin modelo no simula la experiencia: sus acciones 3D/AR aparecen deshab
 - **Scene Viewer** abre el visor compatible de Android cuando WebXR no está disponible.
 - **Quick Look** abre el visor AR de iOS, basado en ARKit.
 
-La colocación usa `ar-placement="floor"` para superficies horizontales y `ar-scale="auto"`, por lo que la escala y el origen correctos deben venir del archivo 3D.
+La colocación usa `ar-placement="floor"` para superficies horizontales y `ar-scale="fixed"`. El origen y la escala correctos deben venir del archivo 3D.
 
-La pantalla expone progreso de carga, reintento ante error y una acción visible para pasar a AR Lite. Si la activación AR se declara incompatible o emite un fallo, el flujo cambia automáticamente al nivel compatible.
+La pantalla expone progreso de carga y un botón explícito que llama a `activateAR()` directamente desde el gesto del usuario. Si la plataforma se declara incompatible o la activación falla, el flujo cambia al modo con marcador.
 
 #### Límites importantes en iOS
 
@@ -39,22 +39,17 @@ Quick Look es una interfaz nativa del sistema, fuera del DOM de la página. Desd
 
 Tampoco existe un callback web fiable para todos los resultados al cerrar Quick Look. Algunos fallos de apertura o conversión pueden ser silenciosos; por eso la página mantiene alternativas explícitas para abrir AR Lite o el visor 3D. Estas limitaciones solo pueden validarse de forma concluyente en Safari sobre un iPhone o iPad físico.
 
-### Nivel 2: AR Lite
+### Nivel 2: AR con marcador de mesa
 
-`src/components/experience/ArLiteExperience.tsx` solicita la cámara trasera con:
+`src/components/experience/ArLiteExperience.tsx` carga de forma diferida el runtime web de MindAR y renderiza el GLB con Three.js. La imagen de referencia impresa junto al QR define la posición, orientación y escala de la mesa. El ancho físico configurado convierte las unidades normalizadas del target a metros.
 
-```ts
-navigator.mediaDevices.getUserMedia({
-  audio: false,
-  video: { facingMode: { ideal: "environment" } },
-});
-```
+El plato se mantiene anclado mientras la referencia sea visible. Al perderla se conserva la última pose durante 350 ms y después se oculta para evitar que flote; al reenfocarla vuelve a aparecer. El usuario puede moverlo sobre el plano y girarlo, pero la escala queda bloqueada.
 
-El vídeo ocupa el fondo y el modelo se renderiza encima. El usuario lo coloca en la retícula y dispone de controles manuales para moverlo, girarlo, hacerlo más pequeño o más grande y restablecer la composición.
+Este nivel no ejecuta SLAM ni ofrece oclusión: si el marcador sale del encuadre durante más tiempo hay que volver a enfocarlo. A cambio, ofrece posición y escala reproducibles en dispositivos que solo exponen cámara web.
 
-AR Lite **no es AR espacial**: no ejecuta SLAM, no detecta planos, no crea un anclaje persistente, no calcula automáticamente la escala real y no ofrece oclusión con objetos del entorno. Es una previsualización compatible sobre la imagen de cámara y se presenta como tal en la interfaz.
+El runtime MindAR 1.2.5 está vendorizado en `src/vendor/mind-ar` con licencia MIT y usa un alias fijado de Three 0.160.1. Así no se instala su compilador Node (`canvas`) ni entra en conflicto con Three 0.183, requerido por `<model-viewer>`.
 
-La cámara se detiene al salir del modo, al perder la pista o al abandonar la página. Los fallos se clasifican como permiso no autorizado, cámara ausente, cámara ocupada, contexto inseguro o error desconocido. Cuando la cámara no puede iniciarse, el flujo cae al visor 3D; los casos recuperables ofrecen reintento.
+La cámara se detiene al salir del modo o abandonar la página. Los fallos se clasifican como permiso no autorizado, cámara ausente, cámara ocupada, contexto inseguro o error desconocido. Si no puede iniciarse, el flujo cae al visor 3D.
 
 En una web normal no existe una URL segura y universal para abrir directamente los ajustes de cámara de iOS. El proyecto solo muestra **Abrir ajustes** si un contenedor nativo proporciona este bridge opcional:
 
@@ -68,7 +63,7 @@ Sin ese bridge se muestran instrucciones para revisar el permiso en el navegador
 
 `src/components/experience/Viewer3D.tsx` carga el mismo GLB con controles de órbita y zoom. Es la salida segura cuando el usuario elige **Ver en 3D**, el dispositivo no puede usar cámara/AR, se deniega el permiso o falla un nivel anterior. La carga usa progreso real, timeout, estado de error y reintento.
 
-El orquestador de los tres niveles está en `src/components/screens/ArViewScreen.tsx`. El registro y el ciclo de carga de `<model-viewer>` se centralizan en `src/hooks/useModelViewer.ts`; la solicitud y limpieza de cámara están en `src/lib/camera.ts`.
+El orquestador de los tres niveles está en `src/components/screens/ArViewScreen.tsx`. El registro y el ciclo de carga de `<model-viewer>` se centralizan en `src/hooks/useModelViewer.ts`; MindAR administra la cámara en el nivel con marcador.
 
 ---
 
@@ -80,6 +75,12 @@ En `src/lib/menu-data.ts`, cada plato puede declarar:
 imageUrl?: string;      // fotografía de tarjeta/detalle
 modelGlbUrl?: string;   // GLB para visor 3D, AR Lite y AR real
 modelUsdzUrl?: string;  // USDZ opcional para Quick Look en iOS
+arCalibration?: {
+  realSizeMm: [number, number, number];
+  scaleCorrection: number;
+  anchorOffsetMm: [number, number, number];
+  rotationDeg: [number, number, number];
+};
 ```
 
 Estado actual:
@@ -170,12 +171,13 @@ Después abre `https://<IP-del-equipo>:3000` desde el teléfono conectado a la m
 | Caso | Acción | Resultado esperado |
 | --- | --- | --- |
 | iPhone/iPad + Safari, Quick Look disponible | Ver en mi mesa → abrir AR real | Se abre la UI nativa de Quick Look; al volver, la página continúa operativa y conserva las alternativas. |
-| iPhone/iPad con fallo silencioso de Quick Look | Usar AR Lite | Se solicita cámara y aparece la composición manual sobre vídeo. |
+| iPhone/iPad con fallo silencioso de Quick Look | Usar AR con marcador | Se solicita cámara, se enfoca la referencia impresa y el plato queda anclado. |
 | Android + Chrome con WebXR/ARCore | Ver en mi mesa → abrir AR real | Sesión WebXR y colocación espacial dentro del navegador. |
 | Android sin WebXR, con Scene Viewer | Ver en mi mesa → abrir AR real | Se abre Scene Viewer; al regresar, la página sigue utilizable. |
-| Dispositivo sin AR nativa pero con cámara | Ver en mi mesa | El flujo ofrece o activa AR Lite. |
-| Permiso de cámara denegado | Entrar en AR Lite | Mensaje específico, ayuda/reintento cuando corresponde y fallback al visor 3D. |
-| Cámara ocupada o pista interrumpida | Entrar o permanecer en AR Lite | La cámara se libera y el flujo pasa al visor 3D con explicación. |
+| Dispositivo sin AR nativa pero con cámara | Ver en mi mesa | El flujo activa AR con marcador. |
+| Permiso de cámara denegado | Entrar en AR con marcador | Mensaje específico, ayuda/reintento cuando corresponde y fallback al visor 3D. |
+| Referencia fuera de cuadro | Mover la cámara | Se mantiene brevemente la pose, se oculta el plato y se solicita reenfocar el marcador. |
+| Cámara ocupada o pista interrumpida | Entrar o permanecer en AR con marcador | La cámara se libera y el flujo pasa al visor 3D con explicación. |
 | Escritorio | Ver en 3D | Modelo orbitable con zoom, sin solicitar cámara. |
 | Plato sin `modelGlbUrl` | Ver la tarjeta o el detalle | Acciones 3D/AR deshabilitadas y aviso de modelo en producción. |
 
@@ -198,7 +200,7 @@ Antes de desplegar un modelo nuevo:
 
 1. Optimizar el GLB y comprobarlo en el visor 3D.
 2. Verificar dimensiones, origen y orientación contra el plato real.
-3. Probar AR Lite y cada launcher nativo disponible en dispositivos físicos.
+3. Imprimir el marcador a su ancho configurado y probar el tracking junto a cada launcher nativo disponible.
 4. Validar materiales en Quick Look; si la conversión runtime no es suficiente, exportar un USDZ propio.
 5. Incrementar la versión `?v=...` y confirmar MIME, caché y `Permissions-Policy` en el entorno publicado.
 
@@ -242,3 +244,14 @@ gcloud storage buckets update gs://<bucket> --cors-file=gcs-cors.json
 ```
 
 Si cambia la URL del servicio de Cloud Run (nuevo dominio, dominio propio, etc.), hay que agregarla a la lista `origin` del bloque `PUT` en `gcs-cors.json` y reaplicar.
+
+### Tarjetas QR y targets AR
+
+Cada restaurante dispone en su panel de una sección **QR y marcador AR de las mesas**. Desde ahí puede:
+
+1. Subir la imagen de referencia y su archivo `.mind` compilado.
+2. Declarar el ancho físico exacto de la imagen impresa.
+3. Versionar el marcador.
+4. Abrir `/r/[slug]/marker?table=12` para generar e imprimir una tarjeta con el target y un QR específico de mesa.
+
+La imagen y el `.mind` deben corresponder exactamente. El target puede generarse con el [compilador de imágenes de MindAR](https://hiukim.github.io/mind-ar-js-doc/tools/compile/). Si cambia el diseño, incrementa `version`, guarda la nueva pareja de archivos y vuelve a imprimir las tarjetas. La referencia debe quedar plana, mate, sin recortes y al ancho configurado; el QR puede variar por mesa porque se imprime a su lado y no forma parte del target.

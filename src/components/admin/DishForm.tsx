@@ -26,6 +26,18 @@ export default function DishForm({ restaurantId, categories, dish }: Props) {
   const [imageUrl, setImageUrl] = useState(dish?.imageUrl ?? "");
   const [modelGlbUrl, setModelGlbUrl] = useState(dish?.modelGlbUrl ?? "");
   const [modelUsdzUrl, setModelUsdzUrl] = useState(dish?.modelUsdzUrl ?? "");
+  const [realSize, setRealSize] = useState<[string, string, string]>(() =>
+    (dish?.arCalibration?.realSizeMm ?? [100, 50, 100]).map(String) as [string, string, string],
+  );
+  const [anchorOffset, setAnchorOffset] = useState<[string, string, string]>(() =>
+    (dish?.arCalibration?.anchorOffsetMm ?? [0, -120, 0]).map(String) as [string, string, string],
+  );
+  const [rotation, setRotation] = useState<[string, string, string]>(() =>
+    (dish?.arCalibration?.rotationDeg ?? [90, 0, 0]).map(String) as [string, string, string],
+  );
+  const [scaleCorrection, setScaleCorrection] = useState(
+    String(dish?.arCalibration?.scaleCorrection ?? 1),
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -52,6 +64,14 @@ export default function DishForm({ restaurantId, categories, dish }: Props) {
       imageUrl: imageUrl || undefined,
       modelGlbUrl: modelGlbUrl || undefined,
       modelUsdzUrl: modelUsdzUrl || undefined,
+      arCalibration: modelGlbUrl
+        ? {
+            realSizeMm: realSize.map(Number),
+            anchorOffsetMm: anchorOffset.map(Number),
+            rotationDeg: rotation.map(Number),
+            scaleCorrection: Number(scaleCorrection),
+          }
+        : undefined,
     };
 
     try {
@@ -156,6 +176,94 @@ export default function DishForm({ restaurantId, categories, dish }: Props) {
             onChange={setModelUsdzUrl}
           />
         </div>
+
+        {modelGlbUrl && (
+          <fieldset className="admin-fieldset">
+            <legend>Calibración AR con marcador</legend>
+            <p className="faint">
+              Valores físicos del plato. La escala queda bloqueada para que el cliente lo vea a tamaño real.
+            </p>
+
+            <div className="admin-form-row admin-form-row--three">
+              {(["Ancho (mm)", "Alto (mm)", "Fondo (mm)"] as const).map((label, index) => (
+                <div className="admin-field" key={label}>
+                  <label htmlFor={`real-size-${index}`}>{label}</label>
+                  <input
+                    id={`real-size-${index}`}
+                    type="number"
+                    min="1"
+                    max="2000"
+                    required
+                    value={realSize[index]}
+                    onChange={(event) => {
+                      const next = [...realSize] as [string, string, string];
+                      next[index] = event.target.value;
+                      setRealSize(next);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="admin-form-row admin-form-row--three">
+              {(["Derecha X (mm)", "Frente Y (mm)", "Altura Z (mm)"] as const).map(
+                (label, index) => (
+                  <div className="admin-field" key={label}>
+                    <label htmlFor={`anchor-offset-${index}`}>{label}</label>
+                    <input
+                      id={`anchor-offset-${index}`}
+                      type="number"
+                      min="-2000"
+                      max="2000"
+                      required
+                      value={anchorOffset[index]}
+                      onChange={(event) => {
+                        const next = [...anchorOffset] as [string, string, string];
+                        next[index] = event.target.value;
+                        setAnchorOffset(next);
+                      }}
+                    />
+                  </div>
+                ),
+              )}
+            </div>
+
+            <div className="admin-form-row admin-form-row--three">
+              {(["Rotación X", "Rotación Y", "Rotación Z"] as const).map((label, index) => (
+                <div className="admin-field" key={label}>
+                  <label htmlFor={`rotation-${index}`}>{label}</label>
+                  <input
+                    id={`rotation-${index}`}
+                    type="number"
+                    min="-360"
+                    max="360"
+                    required
+                    value={rotation[index]}
+                    onChange={(event) => {
+                      const next = [...rotation] as [string, string, string];
+                      next[index] = event.target.value;
+                      setRotation(next);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="admin-field">
+              <label htmlFor="scale-correction">Corrección fina de escala</label>
+              <input
+                id="scale-correction"
+                type="number"
+                min="0.1"
+                max="10"
+                step="0.01"
+                required
+                value={scaleCorrection}
+                onChange={(event) => setScaleCorrection(event.target.value)}
+              />
+            </div>
+          </fieldset>
+        )}
 
         <div className="admin-form-actions">
           <button type="submit" className="btn-primary" disabled={pending}>

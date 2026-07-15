@@ -8,28 +8,30 @@ import type { ArStatus, ModelViewerArStatusEvent, ModelViewerElement } from "@/t
 import { IconClose, IconCube } from "@/components/icons";
 import ArLoadingScreen from "@/components/screens/ArLoadingScreen";
 
-export type LiteEntryReason = "manual" | "unsupported" | "failed";
+export type LiteEntryReason = "unsupported" | "failed";
 
 interface Props {
   t: Strings;
   dish: Dish;
   onUseLite: (reason: LiteEntryReason) => void;
+  onModelError: () => void;
   onClose: () => void;
 }
 
 type CapabilityState = "checking" | "ready";
 
-export default function RealArLauncher({ t, dish, onUseLite, onClose }: Props) {
+export default function RealArLauncher({ t, dish, onUseLite, onModelError, onClose }: Props) {
   const viewerRef = useRef<ModelViewerElement | null>(null);
-  const [instanceKey, setInstanceKey] = useState(0);
   const [capability, setCapability] = useState<CapabilityState>("checking");
   const [arStatus, setArStatus] = useState<ArStatus>("not-presenting");
   const [launching, setLaunching] = useState(false);
-  const { defined, state, progress } = useModelViewerLifecycle(
-    viewerRef,
-    dish.modelGlbUrl,
-    instanceKey,
-  );
+  const { defined, state, progress } = useModelViewerLifecycle(viewerRef, dish.modelGlbUrl);
+
+  // The lite stage renders the same .glb, so a download/parse failure here would
+  // fail there too — skip straight to the 3D viewer, which has its own retry UI.
+  useEffect(() => {
+    if (state === "error") onModelError();
+  }, [onModelError, state]);
 
   useEffect(() => {
     if (!defined || state !== "ready") return;
@@ -73,7 +75,7 @@ export default function RealArLauncher({ t, dish, onUseLite, onClose }: Props) {
 
     viewer.addEventListener("ar-status", onArStatus);
     return () => viewer.removeEventListener("ar-status", onArStatus);
-  }, [defined, instanceKey, onUseLite]);
+  }, [defined, onUseLite]);
 
   const launchAr = useCallback(async () => {
     const viewer = viewerRef.current;
@@ -82,20 +84,18 @@ export default function RealArLauncher({ t, dish, onUseLite, onClose }: Props) {
       return;
     }
 
-    setLaunching(true);
     try {
-      await viewer.activateAR();
+      // Create the promise before an async boundary so the native launcher
+      // receives the original click's user activation.
+      const activation = viewer.activateAR();
+      setLaunching(true);
+      await activation;
     } catch {
       onUseLite("failed");
     } finally {
       setLaunching(false);
     }
   }, [onUseLite]);
-
-  const retryModel = () => {
-    setCapability("checking");
-    setInstanceKey((current) => current + 1);
-  };
 
   return (
     <div
@@ -106,7 +106,6 @@ export default function RealArLauncher({ t, dish, onUseLite, onClose }: Props) {
     >
       {defined && dish.modelGlbUrl && (
         <model-viewer
-          key={instanceKey}
           ref={viewerRef}
           className="experience__mv"
           src={dish.modelGlbUrl}
@@ -116,7 +115,7 @@ export default function RealArLauncher({ t, dish, onUseLite, onClose }: Props) {
           ar
           ar-modes="webxr scene-viewer quick-look"
           ar-placement="floor"
-          ar-scale="auto"
+          ar-scale="fixed"
           ar-usdz-max-texture-size="1024"
           camera-controls
           touch-action="none"
@@ -141,44 +140,35 @@ export default function RealArLauncher({ t, dish, onUseLite, onClose }: Props) {
         </div>
       </div>
 
-      {state === "error" && (
-        <div className="experience__error" role="alert">
-          <div>{t.modelError}</div>
-          <button type="button" className="glass-btn" onClick={retryModel}>
-            {t.retry}
-          </button>
-          <button type="button" className="glass-btn" onClick={() => onUseLite("failed")}>
-            {t.useArLite}
-          </button>
-        </div>
-      )}
-
       {state === "ready" && (
         <div className="experience__bottom">
           {arStatus === "session-started" && <div className="hint-pill">{t.detecting}</div>}
           {arStatus === "object-placed" && <div className="hint-pill">{t.anchoring}</div>}
           <div className="glass-card glass-card--experience">
-            <div className="glass-card__eyebrow">{t.realArReady}</div>
+            <div className="glass-card__eyebrow">
+              {capability === "checking"
+                ? t.arCheckingSupport
+                : launching
+                  ? t.launchingRealAr
+                  : t.realAr}
+            </div>
             <div className="glass-card__row">
               <div className="glass-card__name">{dish.name}</div>
               <div className="glass-card__price">${dish.price}</div>
             </div>
             <div className="glass-card__ing">{t.realArInstructions}</div>
-            <div className="glass-card__actions glass-card__actions--stack">
+            <div className="glass-card__note">{t.quickLookFallback}</div>
+            <div className="glass-card__actions">
               <button
                 type="button"
-                className="glass-btn glass-btn--primary"
-                disabled={launching || capability === "checking"}
-                onClick={launchAr}
+                className="btn-primary"
+                disabled={capability !== "ready" || launching}
+                onClick={() => void launchAr()}
               >
-                <IconCube size={15} />
-                {launching ? t.launchingRealAr : capability === "checking" ? t.preparing : t.launchRealAr}
-              </button>
-              <button type="button" className="glass-btn" onClick={() => onUseLite("manual")}>
-                {t.useArLite}
+                <IconCube size={16} />
+                {launching ? t.launchingRealAr : t.tapToPlace}
               </button>
             </div>
-            <div className="glass-card__note">{t.quickLookFallback}</div>
           </div>
         </div>
       )}
