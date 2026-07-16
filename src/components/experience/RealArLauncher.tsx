@@ -20,12 +20,20 @@ interface Props {
 
 type CapabilityState = "checking" | "ready";
 
+function nativeArModes(): string {
+  if (typeof navigator !== "undefined" && /android/i.test(navigator.userAgent)) {
+    return "webxr";
+  }
+  return "webxr quick-look";
+}
+
 export default function RealArLauncher({ t, dish, onUseLite, onModelError, onClose }: Props) {
   const viewerRef = useRef<ModelViewerElement | null>(null);
   const [capability, setCapability] = useState<CapabilityState>("checking");
   const [arStatus, setArStatus] = useState<ArStatus>("not-presenting");
   const [launching, setLaunching] = useState(false);
   const { defined, state, progress } = useModelViewerLifecycle(viewerRef, dish.modelGlbUrl);
+  const arModes = nativeArModes();
 
   // The lite stage renders the same .glb, so a download/parse failure here would
   // fail there too — skip straight to the 3D viewer, which has its own retry UI.
@@ -97,6 +105,10 @@ export default function RealArLauncher({ t, dish, onUseLite, onModelError, onClo
     }
   }, [onUseLite]);
 
+  const openLite = useCallback(() => {
+    onUseLite("unsupported");
+  }, [onUseLite]);
+
   return (
     <div
       className="experience experience--real-ar anim-fade-in"
@@ -113,7 +125,7 @@ export default function RealArLauncher({ t, dish, onUseLite, onModelError, onClo
           alt={dish.name}
           poster={dish.imageUrl}
           ar
-          ar-modes="webxr scene-viewer quick-look"
+          ar-modes={arModes}
           ar-placement="floor"
           ar-scale="fixed"
           ar-usdz-max-texture-size="1024"
@@ -158,15 +170,19 @@ export default function RealArLauncher({ t, dish, onUseLite, onModelError, onClo
             </div>
             <div className="glass-card__ing">{t.realArInstructions}</div>
             <div className="glass-card__note">{t.quickLookFallback}</div>
-            <div className="glass-card__actions">
+            <div className="glass-card__actions glass-card__actions--stack">
               <button
                 type="button"
-                className="btn-primary"
+                className="glass-btn glass-btn--primary"
                 disabled={capability !== "ready" || launching}
                 onClick={() => void launchAr()}
               >
                 <IconCube size={16} />
                 {launching ? t.launchingRealAr : t.tapToPlace}
+              </button>
+              <button type="button" className="glass-btn" disabled={launching} onClick={openLite}>
+                <IconCube size={16} />
+                {t.useArLiteInstead}
               </button>
             </div>
           </div>

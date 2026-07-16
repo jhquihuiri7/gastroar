@@ -1798,10 +1798,12 @@ button {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  isolation: isolate;
   background: #070605;
 }
 
 .marker-ar__stage video {
+  z-index: 0 !important;
   object-fit: cover;
 }
 

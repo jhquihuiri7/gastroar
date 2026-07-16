@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AssetUploader from "@/components/admin/AssetUploader";
+import { normalizeDishCalibration } from "@/lib/ar-config";
 import type { Dish } from "@/lib/menu-data";
 import type { RestaurantCategory } from "@/lib/restaurants";
 
@@ -30,7 +31,7 @@ export default function DishForm({ restaurantId, categories, dish }: Props) {
     (dish?.arCalibration?.realSizeMm ?? [100, 50, 100]).map(String) as [string, string, string],
   );
   const [anchorOffset, setAnchorOffset] = useState<[string, string, string]>(() =>
-    (dish?.arCalibration?.anchorOffsetMm ?? [0, -120, 0]).map(String) as [string, string, string],
+    normalizeDishCalibration(dish?.arCalibration).anchorOffsetMm.map(String) as [string, string, string],
   );
   const [rotation, setRotation] = useState<[string, string, string]>(() =>
     (dish?.arCalibration?.rotationDeg ?? [90, 0, 0]).map(String) as [string, string, string],

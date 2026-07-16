@@ -32,10 +32,24 @@ export const DEFAULT_DISH_AR_CALIBRATION: Required<
   Pick<DishArCalibration, "scaleCorrection" | "anchorOffsetMm" | "rotationDeg">
 > = {
   scaleCorrection: 1,
-  // Place the dish below the marker so the artwork remains easy to reacquire.
-  anchorOffsetMm: [0, -120, 0],
+  // The dish is centered on the tracked artwork and rises along its normal.
+  anchorOffsetMm: [0, 0, 0],
   rotationDeg: [90, 0, 0],
 };
+
+const LEGACY_OFF_MARKER_OFFSET: Vector3Tuple = [0, -120, 0];
+
+function normalizedAnchorOffset(calibration?: DishArCalibration): Vector3Tuple {
+  const offset = calibration?.anchorOffsetMm;
+  if (!offset) return DEFAULT_DISH_AR_CALIBRATION.anchorOffsetMm;
+
+  // Earlier releases used this exact value as their default, placing every
+  // dish 120 mm below the reference. Treat persisted copies as legacy data.
+  if (offset.every((value, index) => value === LEGACY_OFF_MARKER_OFFSET[index])) {
+    return DEFAULT_DISH_AR_CALIBRATION.anchorOffsetMm;
+  }
+  return offset;
+}
 
 export function normalizeMarkerConfig(config?: Partial<ArMarkerConfig>): ArMarkerConfig {
   const width = Number(config?.physicalWidthMm);
@@ -67,8 +81,7 @@ export function normalizeDishCalibration(
       Number.isFinite(correction) && correction >= 0.1 && correction <= 10
         ? correction
         : DEFAULT_DISH_AR_CALIBRATION.scaleCorrection,
-    anchorOffsetMm:
-      calibration?.anchorOffsetMm ?? DEFAULT_DISH_AR_CALIBRATION.anchorOffsetMm,
+    anchorOffsetMm: normalizedAnchorOffset(calibration),
     rotationDeg: calibration?.rotationDeg ?? DEFAULT_DISH_AR_CALIBRATION.rotationDeg,
   };
 }

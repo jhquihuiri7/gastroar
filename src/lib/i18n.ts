@@ -57,6 +57,7 @@ export interface Strings {
   markerGestureHint: string;
   realSizeLocked: string;
   use3dInstead: string;
+  useArLiteInstead: string;
   tableLabel: string;
   arCompatibilityNotice: string;
   arFailedToLite: string;
@@ -166,9 +167,10 @@ export const STR: Record<Lang, Strings> = {
     markerFound: "Table locked · the dish is anchored",
     markerLost: "Reference lost · hold steady while we reacquire it",
     markerHint: "Keep the printed reference flat, visible and free of glare.",
-    markerGestureHint: "Drag to move · Twist with two fingers to rotate",
+    markerGestureHint: "Locked to the reference · Twist with two fingers to rotate",
     realSizeLocked: "Real size locked",
     use3dInstead: "Use 3D instead",
+    useArLiteInstead: "Use QR AR",
     tableLabel: "Table",
     arCompatibilityNotice: "Full AR is not available. We’ll use compatible mode.",
     arFailedToLite: "Full AR could not start. Compatible mode is ready.",
@@ -248,9 +250,10 @@ export const STR: Record<Lang, Strings> = {
     markerFound: "Mesa fijada · el plato está anclado",
     markerLost: "Referencia perdida · mantén el móvil estable para recuperarla",
     markerHint: "Mantén la referencia impresa plana, visible y sin reflejos.",
-    markerGestureHint: "Arrastra para mover · Gira con dos dedos",
+    markerGestureHint: "Fijado a la referencia · Gira con dos dedos",
     realSizeLocked: "Tamaño real bloqueado",
     use3dInstead: "Usar visor 3D",
+    useArLiteInstead: "Usar AR con QR",
     tableLabel: "Mesa",
     arCompatibilityNotice: "La AR completa no está disponible aquí. Usaremos el modo compatible.",
     arFailedToLite: "No se pudo iniciar el AR completo. El modo compatible está listo.",
@@ -330,9 +333,10 @@ export const STR: Record<Lang, Strings> = {
     markerFound: "Table verrouillée · le plat est ancré",
     markerLost: "Référence perdue · restez stable pour la retrouver",
     markerHint: "Gardez la référence imprimée à plat, visible et sans reflet.",
-    markerGestureHint: "Glissez pour déplacer · Tournez avec deux doigts",
+    markerGestureHint: "Fixé sur la référence · Tournez avec deux doigts",
     realSizeLocked: "Taille réelle verrouillée",
     use3dInstead: "Utiliser la vue 3D",
+    useArLiteInstead: "RA avec QR",
     tableLabel: "Table",
     arCompatibilityNotice: "La RA complète n’est pas disponible. Le mode compatible sera utilisé.",
     arFailedToLite: "La RA complète n’a pas démarré. Le mode compatible est prêt.",

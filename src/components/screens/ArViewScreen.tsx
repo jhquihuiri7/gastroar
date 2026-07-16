@@ -25,14 +25,25 @@ interface Props {
 
 type TableStage = "real" | "lite" | "viewer";
 
+function requestedInitialStage(): TableStage | null {
+  if (typeof window === "undefined") return null;
+  const mode = new URLSearchParams(window.location.search).get("ar")?.toLowerCase();
+  if (mode === "lite" || mode === "arlite" || mode === "qr") return "lite";
+  if (mode === "viewer" || mode === "3d") return "viewer";
+  return null;
+}
+
 /**
  * Automatic fallback cascade for "View on my table": try full native AR first,
  * then marker-based camera AR, then the plain 3D viewer. Each downgrade
  * happens without user input and surfaces a notice explaining the switch.
  */
 export default function ArViewScreen({ t, dish, marker, tableId, onClose, onOpenWaiterSheet }: Props) {
-  const [stage, setStage] = useState<TableStage>("real");
-  const [liteNotice, setLiteNotice] = useState<string | undefined>();
+  const initialStage = requestedInitialStage();
+  const [stage, setStage] = useState<TableStage>(initialStage ?? "real");
+  const [liteNotice, setLiteNotice] = useState<string | undefined>(
+    initialStage === "lite" ? t.arLiteActivated : undefined,
+  );
   const [cameraFailure, setCameraFailure] = useState<CameraFailureReason | null>(null);
 
   useEffect(() => {

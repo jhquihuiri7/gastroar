@@ -65,7 +65,7 @@ export const DISHES: Dish[] = [
     arCalibration: {
       realSizeMm: [72, 169, 72],
       scaleCorrection: 1,
-      anchorOffsetMm: [0, -120, 0],
+      anchorOffsetMm: [0, 0, 0],
       rotationDeg: [90, 0, 0],
     },
   },

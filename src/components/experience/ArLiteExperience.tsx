@@ -8,7 +8,6 @@ import {
   DirectionalLight,
   Group,
   MathUtils,
-  Matrix4,
   Mesh,
   PlaneGeometry,
   ShadowMaterial,
@@ -45,20 +44,9 @@ type TrackingState = "initializing" | "scanning" | "tracking" | "limited";
 type Point = { x: number; y: number };
 
 interface GestureBase {
-  center: Point;
   angle: number;
   count: number;
-  x: number;
-  y: number;
   heading: number;
-}
-
-function centerOf(points: Point[]): Point {
-  const total = points.reduce((sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }), {
-    x: 0,
-    y: 0,
-  });
-  return { x: total.x / points.length, y: total.y / points.length };
 }
 
 async function classifyStartFailure(error: unknown): Promise<CameraFailureReason> {
@@ -115,7 +103,7 @@ export default function ArLiteExperience({
   const anchorRef = useRef<MindARAnchor | null>(null);
   const placementRef = useRef<Group | null>(null);
   const basePlacementRef = useRef({ x: 0, y: 0, z: 0, heading: 0 });
-  const livePlacementRef = useRef({ x: 0, y: 0, heading: 0 });
+  const livePlacementRef = useRef({ heading: 0 });
   const pointersRef = useRef(new Map<number, Point>());
   const gestureBaseRef = useRef<GestureBase | null>(null);
   const [tracking, setTracking] = useState<TrackingState>("initializing");
@@ -134,8 +122,6 @@ export default function ArLiteExperience({
     let active = true;
     let engine: MindARThree | null = null;
     let modelRoot: Object3D | null = null;
-    let holdUntil = 0;
-    const lastMatrix = new Matrix4();
 
     async function start() {
       if (!window.isSecureContext) {
@@ -174,10 +160,13 @@ export default function ArLiteExperience({
           uiLoading: "no",
           uiScanning: "no",
           uiError: "no",
-          filterMinCF: 0.002,
-          filterBeta: 20,
-          warmupTolerance: 3,
-          missTolerance: 8,
+          // MindAR's fast One Euro filter follows deliberate motion without
+          // accumulating the lag produced by the previous low beta value.
+          filterMinCF: 0.001,
+          filterBeta: 1000,
+          warmupTolerance: 2,
+          // Absorb short motion-blur misses but hide as soon as loss is real.
+          missTolerance: 10,
         });
         engineRef.current = engine;
         engine.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
@@ -196,14 +185,20 @@ export default function ArLiteExperience({
         const baseY = offsetY / marker.physicalWidthMm;
         const baseZ = offsetZ / marker.physicalWidthMm;
         basePlacementRef.current = { x: baseX, y: baseY, z: baseZ, heading: 0 };
-        livePlacementRef.current = { x: baseX, y: baseY, heading: 0 };
+        livePlacementRef.current = { heading: 0 };
         placement.position.set(baseX, baseY, baseZ);
 
         modelRoot = gltf.scene;
         const box = new Box3().setFromObject(modelRoot);
         const size = box.getSize(new Vector3());
         const center = box.getCenter(new Vector3());
+
+        // Center and ground the raw Y-up model before rotating it into the
+        // marker's XY plane. Applying both operations to modelRoot directly
+        // made the centering translation occur in the wrong coordinate space.
+        const modelPivot = new Group();
         modelRoot.position.set(-center.x, -box.min.y, -center.z);
+        modelPivot.add(modelRoot);
         const desiredWidthM = calibration.realSizeMm?.[0]
           ? calibration.realSizeMm[0] / 1_000
           : size.x;
@@ -211,8 +206,8 @@ export default function ArLiteExperience({
           ? desiredWidthM / size.x
           : 1;
         const targetScale = (sourceToMeters / markerWidthM) * calibration.scaleCorrection;
-        modelRoot.scale.setScalar(targetScale);
-        modelRoot.rotation.set(
+        modelPivot.scale.setScalar(targetScale);
+        modelPivot.rotation.set(
           MathUtils.degToRad(calibration.rotationDeg[0]),
           MathUtils.degToRad(calibration.rotationDeg[1]),
           MathUtils.degToRad(calibration.rotationDeg[2]),
@@ -224,7 +219,7 @@ export default function ArLiteExperience({
             mesh.receiveShadow = true;
           }
         });
-        placement.add(modelRoot);
+        placement.add(modelPivot);
 
         const realWidthUnits = desiredWidthM / markerWidthM;
         const shadow = new Mesh(
@@ -242,15 +237,10 @@ export default function ArLiteExperience({
         engine.scene.add(keyLight);
 
         anchor.onTargetFound = () => {
-          holdUntil = 0;
           if (active) setTracking("tracking");
         };
         anchor.onTargetLost = () => {
-          holdUntil = performance.now() + 350;
           if (active) setTracking("limited");
-        };
-        anchor.onTargetUpdate = () => {
-          if (anchor.visible) lastMatrix.copy(anchor.group.matrix);
         };
 
         await engine.start();
@@ -259,14 +249,6 @@ export default function ArLiteExperience({
         setTracking(anchor.visible ? "tracking" : "scanning");
         engine.renderer.setAnimationLoop(() => {
           if (!engine || !anchor) return;
-          if (!anchor.visible && holdUntil > performance.now()) {
-            anchor.group.matrix.copy(lastMatrix);
-            anchor.group.visible = true;
-          } else if (!anchor.visible && holdUntil !== 0) {
-            anchor.group.visible = false;
-            holdUntil = 0;
-            if (active) setTracking("scanning");
-          }
           engine.renderer.render(engine.scene, engine.camera);
         });
       } catch (error) {
@@ -304,11 +286,8 @@ export default function ArLiteExperience({
     const [first, second] = points;
     const live = livePlacementRef.current;
     gestureBaseRef.current = {
-      center: centerOf(points),
       angle: second ? Math.atan2(second.y - first.y, second.x - first.x) : 0,
       count: points.length,
-      x: live.x,
-      y: live.y,
       heading: live.heading,
     };
   };
@@ -316,23 +295,13 @@ export default function ArLiteExperience({
   const applyGesture = () => {
     const placement = placementRef.current;
     const base = gestureBaseRef.current;
-    const container = containerRef.current;
     const points = [...pointersRef.current.values()];
-    if (!placement || !base || !container || !points.length) return;
+    if (!placement || !base || base.count < 2 || points.length < 2) return;
 
-    const center = centerOf(points);
-    const unitPerPixel = 2 / Math.max(container.clientWidth, 1);
-    const x = Math.max(-3, Math.min(3, base.x + (center.x - base.center.x) * unitPerPixel));
-    const y = Math.max(-3, Math.min(3, base.y - (center.y - base.center.y) * unitPerPixel));
-    let heading = base.heading;
-    if (base.count >= 2 && points.length >= 2) {
-      const [first, second] = points;
-      heading += Math.atan2(second.y - first.y, second.x - first.x) - base.angle;
-    }
-    placement.position.x = x;
-    placement.position.y = y;
+    const [first, second] = points;
+    const heading = base.heading + Math.atan2(second.y - first.y, second.x - first.x) - base.angle;
     placement.rotation.z = heading;
-    livePlacementRef.current = { x, y, heading };
+    livePlacementRef.current = { heading };
   };
 
   const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -357,7 +326,7 @@ export default function ArLiteExperience({
     if (!placement) return;
     placement.position.set(base.x, base.y, base.z);
     placement.rotation.z = base.heading;
-    livePlacementRef.current = { x: base.x, y: base.y, heading: base.heading };
+    livePlacementRef.current = { heading: base.heading };
   };
 
   const statusText = tracking === "tracking"
